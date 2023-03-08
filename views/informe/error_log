@@ -1,0 +1,2 @@
+[07-Sep-2022 17:09:27 UTC] PHP Warning:  Use of undefined constant URL - assumed 'URL' (this will throw an Error in a future version of PHP) in /home/helaasdi/cayma.tiendasartika.com/panel/views/informe/index.php on line 5
+[07-Sep-2022 17:14:21 UTC] PHP Warning:  Use of undefined constant URL - assumed 'URL' (this will throw an Error in a future version of PHP) in /home/helaasdi/cayma.tiendasartika.com/panel/views/informe/index.php on line 5
