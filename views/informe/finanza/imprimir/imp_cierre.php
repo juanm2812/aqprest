@@ -350,7 +350,7 @@ foreach ($friendsByAge as $k=>$amigos){
 
 		$pdf->SetFont('Courier', '', 8);
 		$pdf->Cell(8,4, $amigo->cantidad,0,0,'R');
-		$pdf->MultiCell(42,4,utf8_decode($amigo->Producto->pro_nom).' '.utf8_decode($amigo->Producto->pro_pre),0,'L'); 
+		$pdf->MultiCell(42,4,utf8_decode().' '.utf8_decode($amigo->Producto->pro_pre),0,'L'); 
 		// $pdf->Cell(47, -4, $amigo->cantidad,0,0,'R');
 		$pdf->Cell(56, -4, $amigo->precio,0,0,'R');
 		$pdf->Cell(15, -4, number_format(($amigo->cantidad * $amigo->precio),2),0,0,'R');

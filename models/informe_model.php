@@ -585,7 +585,7 @@ class Informe_Model extends Model
                 ->fetch(PDO::FETCH_OBJ);
 
             $c->{'Detalle'} = $this->db->query("SELECT v_productos.pro_cod AS codigo_producto, 
-                CONCAT(v_productos.pro_nom,' ',v_productos.pro_pre) AS nombre_producto, 
+                CONCAT(' ',v_productos.pro_pre) AS nombre_producto, 
                 IF(v_productos.pro_imp='1','10','20') AS codigo_afectacion, 
                 CAST(tm_detalle_venta.cantidad AS DECIMAL(7,2)) AS cantidad, 
                 IF(v_productos.pro_imp='1',ROUND((tm_detalle_venta.precio/(1 + ".igv_dec.")),2),tm_detalle_venta.precio) AS valor_unitario,
