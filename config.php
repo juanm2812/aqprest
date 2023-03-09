@@ -32,7 +32,7 @@ define('DB_CHARSET', 'utf8');
 define('API_TOKEN', '662efccf4c8616416360375504392a4e16c80f28a57d0a7beb85237d15bfaba6');
 
 //path
-define('URL', 'http://localhost/aqp/');
+define('URL', 'http://localhost/aqprest/');
 define('LIBS', 'libs/');
 //igv
 define('igv_int', '10.00'); //igv entero

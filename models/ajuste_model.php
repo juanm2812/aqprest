@@ -122,7 +122,7 @@ class Ajuste_Model extends Model
                         }   
                     }
 
-                $sql = "UPDATE tm_empresa SET ruc = ?,razon_social  = ?, nombre_comercial = ?, direccion_comercial = ?, direccion_fiscal = ?, celular = ?, ubigeo = ?, departamento = ?, provincia = ?, distrito = ?, usuariosol = ?, clavesol = ?, clavecertificado = ?, client_id = ?, client_secret = ?, logo = ?, sunat = ?, modo = ?";
+                $sql = "UPDATE tm_empresa SET ruc = ?,razon_social  = ?, nombre_comercial = ?, direccion_comercial = ?, direccion_fiscal = ?, celular = ?, ubigeo = ?, departamento = ?, provincia = ?, distrito = ?, usuariosol = ?, clavesol = ?, clavecertificado = ?, client_id = ?, client_secret = ?, logo = ?, sunat = ?, modo = ?, ose = ?, ose_url = ?, amazonas = ?";
                 $this->db->prepare($sql)->execute(array(
                     $data['ruc'],
                     $data['razon_social'],
@@ -141,10 +141,16 @@ class Ajuste_Model extends Model
                     $data['client_secret'],
                     $imagen,
                     $data['sunat'],
-                    $data['modo']
+                    $data['modo'],
+                    $data['hidden_ose'],
+                    $data['ose_url'],
+                    $data['hidden_amazonas'],
                 ));
                 Session::set('sunat', $data['sunat']);
                 Session::set('modo', $data['modo']);
+                Session::set('ose', $data['hidden_ose']);
+                Session::set('ose_url', $data['ose_url']);
+
 
                 // return $_FILES['file_certificado']['type'];
             } else {
@@ -185,8 +191,15 @@ class Ajuste_Model extends Model
     {
         try 
         {
-            $sql = "UPDATE tm_tipo_doc SET serie = ?, numero = ?, estado = ? WHERE id_tipo_doc = ?";
-            $this->db->prepare($sql)->execute(array($data['serie'],$data['numero'],$data['estado'],$data['id_tipo_doc']));
+            if($data['defecto'] == '1'){
+                $sql = "UPDATE tm_tipo_doc SET defecto = '0' WHERE defecto = '1'";
+                $this->db->prepare($sql)->execute();
+            }
+
+            $sql = "UPDATE tm_tipo_doc SET serie = ?, numero = ?, estado = ?, defecto = ? WHERE id_tipo_doc = ?";
+            $this->db->prepare($sql)->execute(array($data['serie'],$data['numero'],$data['estado'],$data['defecto'],$data['id_tipo_doc']));
+
+
         } catch (Exception $e) 
         {
             die($e->getMessage());
@@ -220,6 +233,7 @@ class Ajuste_Model extends Model
 
     public function usuario_crud_create($data)
     {
+        error_reporting(0);
         try 
         {
             if( !empty( $_FILES['imagen']['name'] ) ){
@@ -246,11 +260,17 @@ class Ajuste_Model extends Model
                 $imagen = $data['imagen'];
             }
 
+            if($data['editarprecio']=="on"){
+                $editarprecio = 1;
+            }else{
+                $editarprecio = 0;
+            }
+
             $area = (isset($data['id_areap'])) ? $data['id_areap'] : 0;
             $turno_ing = (isset($data['start'])) ? date('H:i:s',strtotime($data['start'])) : null;
             $turno_sal = (isset($data['end'])) ? date('H:i:s',strtotime($data['end'])) : null;
 
-            $consulta = "call usp_configUsuario( :flag, @a, :id_rol, :id_areap, :dni, :ape_paterno, :ape_materno, :nombres, :email, :usuario, :contrasena, :imagen, :turno_ing, :turno_sal);";
+            $consulta = "call usp_configUsuario( :flag, @a, :id_rol, :id_areap, :dni, :ape_paterno, :ape_materno, :nombres, :email, :usuario, :contrasena, :imagen, :editarprecio, :turno_ing, :turno_sal);";
             $arrayParam =  array(
                 ':flag' => 1,
                 ':id_rol' => $data['id_rol'],
@@ -263,6 +283,7 @@ class Ajuste_Model extends Model
                 ':usuario' => $data['usuario'],
                 ':contrasena' => base64_encode($data['contrasena']),
                 ':imagen' => $imagen,
+                ':editarprecio' => $editarprecio,
                 ':turno_ing' => $turno_ing,
                 ':turno_sal' => $turno_sal
             );
@@ -278,6 +299,7 @@ class Ajuste_Model extends Model
 
     public function usuario_crud_update($data)
     {
+        error_reporting(0);
         try 
         {
             if( !empty( $_FILES['imagen']['name'] ) ){
@@ -307,7 +329,15 @@ class Ajuste_Model extends Model
             $turno_ing = (isset($data['start'])) ? date('H:i:s',strtotime($data['start'])) : null;
             $turno_sal = (isset($data['end'])) ? date('H:i:s',strtotime($data['end'])) : null;
 
-            $consulta = "call usp_configUsuario( :flag, :id_usu, :id_rol, :id_areap, :dni, :ape_paterno, :ape_materno, :nombres, :email, :usuario, :contrasena, :imagen, :turno_ing, :turno_sal);";
+            if($data['editarprecio']=="on"){
+                $editarprecio = 1;
+            }else{
+                $editarprecio = 0;
+            }
+
+        // echo $editarprecio;
+         //return false;
+            $consulta = "call usp_configUsuario( :flag, :id_usu, :id_rol, :id_areap, :dni, :ape_paterno, :ape_materno, :nombres, :email, :usuario, :contrasena, :imagen, :editarprecio, :turno_ing, :turno_sal);";
             $arrayParam =  array(
                 ':flag' => 2,
                 ':id_usu' => $data['id_usu'],
@@ -321,6 +351,7 @@ class Ajuste_Model extends Model
                 ':usuario' => $data['usuario'],
                 ':contrasena' => base64_encode($data['contrasena']),
                 ':imagen' => $imagen,
+                ':editarprecio' => $editarprecio ?? 0,
                 ':turno_ing' => $turno_ing,
                 ':turno_sal' => $turno_sal
             );
@@ -682,11 +713,12 @@ class Ajuste_Model extends Model
     {
         try 
         {
-            $consulta = "call usp_configMesas( :flag, @a, :id_salon, :nro_mesa, @b);";
+            $consulta = "call usp_configMesas( :flag, @a, :id_salon, :nro_mesa, :forma, @b);";
             $arrayParam =  array(
                 ':flag' => 1,
                 ':id_salon' => $data['id_salon'],
-                ':nro_mesa' => $data['nro_mesa']
+                ':nro_mesa' => $data['nro_mesa'],
+                ':forma' => $data['forma'],
             );
             $st = $this->db->prepare($consulta);
             $st->execute($arrayParam);
@@ -704,12 +736,13 @@ class Ajuste_Model extends Model
     {
         try 
         {
-            $consulta = "call usp_configMesas( :flag, :id_mesa, :id_salon, :nro_mesa, :estado);";
+            $consulta = "call usp_configMesas( :flag, :id_mesa, :id_salon, :nro_mesa, :forma, :estado);";
             $arrayParam =  array(
                 ':flag' => 2,
                 ':id_mesa' => $data['id_mesa'],
                 ':id_salon' => $data['id_salon'],
                 ':nro_mesa' => $data['nro_mesa'],
+                ':forma' => $data['forma'],
                 ':estado' => $data['estado']                        
             );
             $st = $this->db->prepare($consulta);
@@ -728,7 +761,7 @@ class Ajuste_Model extends Model
     {
         try 
         {
-            $consulta = "call usp_configMesas( :flag, :id_mesa, @a, @b, @c);";
+            $consulta = "call usp_configMesas( :flag, :id_mesa, @a, @b, @c, @d);";
             $arrayParam =  array(
                 ':flag' => 3,
                 ':id_mesa' => $data['id_mesa']
@@ -1138,8 +1171,15 @@ class Ajuste_Model extends Model
             $stmm = $this->db->prepare("SELECT * FROM tm_tipo_medida WHERE grupo = ? OR grupo = ?");
             $stmm->execute(array($data['va1'],$data['va2']));
             $var = $stmm->fetchAll(PDO::FETCH_ASSOC);
+            // $key = 9;
             foreach($var as $v){
-                echo '<option value="'.$v['id_med'].'">'.$v['descripcion'].'</option>';
+                // if ($data['cod'] =='4') {
+                //     //onzas
+                //     echo '<option value="'.$key++.'">'.$v['descripcion'].'</option>';
+                // } else {
+                    echo '<option value="'.$v['id_med'].'">'.$v['descripcion'].'</option>';
+                // }
+                
             }
         }
         catch(Exception $e)
@@ -1230,6 +1270,45 @@ class Ajuste_Model extends Model
         }
     }
 
+    public function producto_prod_delete($data)
+    {
+        try 
+        {
+            $consulta = "DELETE FROM tm_producto WHERE id_prod = ?;";
+            $st = $this->db->prepare($consulta);
+            $st->execute(array($data['id_prod']));
+            $st->fetch(PDO::FETCH_ASSOC);
+            if($st->rowCount()){
+                return 1;
+            }else{
+                return 0;
+            }
+        } catch (Exception $e) 
+        {
+            die($e->getMessage());
+        }
+    }
+
+    public function producto_pres_delete($data)
+    {
+        try 
+        {
+            // DELETE FROM tm_producto_pres WHERE tm_producto_pres.id_pres = 2
+            $consulta = "DELETE FROM tm_producto_pres WHERE id_pres = ?";
+            $st = $this->db->prepare($consulta);
+            $st->execute(array($data['id_pres']));
+            $st->fetch(PDO::FETCH_ASSOC);
+            if($st->rowCount()){
+                return 1;
+            }else{
+                return 0;
+            }
+        } catch (Exception $e) 
+        {
+            die($e->getMessage());
+        }
+    }
+    
     /* ======================= FIN PRODUCTO */
 
     /* ======================= INCIO COMBO */
@@ -1654,6 +1733,7 @@ class Ajuste_Model extends Model
             Session::set('print_cpe', $data['print_cpe']); //funcion impresion directa 
             Session::set('cod_seg', $data['cod_seg']); //funcion codigo de seguridad 
             Session::set('opc_01', $data['opc_01']); //funcion codigo de seguridad 
+
             Session::set('com_tar', $data['com_tar_val']);
             Session::set('note_ticket', $data['note_ticket']);
 
@@ -1686,19 +1766,10 @@ class Ajuste_Model extends Model
         try
         {    
 
-            // id_bloqueo: 2109172516
-            // UPDATE tm_configuracion SET bloqueo = '0' WHERE tm_configuracion.id_cfg = 1;
-            // $sql = "UPDATE tm_configuracion SET zona_hora = ?,trib_acr = ?,trib_car = ?,di_acr = ?,di_car = ?,imp_acr = ?,imp_val = ?,mon_acr = ?,mon_val = ?,pc_name = ?,pc_ip = ?,print_com = ?,print_pre = ?,print_cpe = ?";
-            // $this->db->prepare($sql)->execute();
-
-
-
-
-            $stm = $this->db->prepare("UPDATE tm_configuracion SET bloqueo = ? WHERE tm_configuracion.id_cfg = '1' ");
+            $stm = $this->db->prepare("UPDATE tm_configuracion SET bloqueo = ? WHERE id_cfg = '1' ");
             $stm->execute(array($data['tipo_bloqueo']));
-            // return $c;
+
             if($stm){
-                // Session::set('moneda', $data['mon_val']);
                 Session::set('bloqueo_id', $data['tipo_bloqueo']); 
                 return '1';
             }
@@ -1906,5 +1977,205 @@ class Ajuste_Model extends Model
         }
 
     }
+
+    public function limit($data)
+    {
+        try{
+            if($data == 'user'){
+                $usuarios   = $this->db->prepare('SELECT COUNT(*) total FROM tm_usuario WHERE id_rol != 1');
+                $usuarios->execute();
+                $plan       = $this->db->prepare('SELECT plan FROM tm_configuracion');
+                $plan->execute();
+                $plan           = json_decode($plan->fetch(PDO::FETCH_COLUMN));
+                return [
+                    'limits' => [
+                        'total_users' => $plan->{'limit_users'},
+                    ],
+                    'current' => [
+                        'total_users' => $usuarios->fetch(PDO::FETCH_COLUMN),
+                    ],
+                    'locked_users' => $plan->{'locked_users'},
+
+                ];
+            }elseif($data == 'invoices'){
+                $plan       = $this->db->prepare('SELECT plan FROM tm_configuracion');
+                $plan->execute();
+                $plan           = json_decode($plan->fetch(PDO::FETCH_COLUMN));
+
+                $date = date('Y-m-d', strtotime($plan->{'created_at'}));
+                $day_start_billing  = date('d', strtotime($plan->{'created_at'}));
+                $day_now            = (int)date('j');
+                $end   = date('Y-m-d');
+    
+                $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+                $end_date = date('Y-m-t', strtotime($date));
+                if($day_now <= $day_start_billing){
+                    if ($date == $end_date)
+                    {
+
+                        $init   = date('Y-m-t',strtotime("- 1 month"));	
+                        $frist_date = date('Y-m-01', strtotime($init));
+                        $last_date_nm = date('Y-m-t',strtotime($frist_date."+ 1 month")); 
+
+                    }else {
+
+                        $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+                        $init	= date('Y-m-d',strtotime($init."- 1 month"));
+                        $last_date_nm = date('Y-m-d',strtotime($init."+ 1 month")); 
+
+                    }
+                }else{
+                    if ($date == $end_date)
+                    {	
+
+                        $init   = date('Y-m-t');	
+                        $frist_date = date('Y-m-01', strtotime($init));
+                        $last_date_nm = date('Y-m-t',strtotime($frist_date."+ 1 month")); 
+                        
+                    }else {
+                        
+                        $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+                        $last_date_nm = date('Y-m-d',strtotime($init."+ 1 month")); 
+                        
+                    }
+                }
+
+                $comprobantes = $this->db->prepare("SELECT COUNT(*) total_comprobantes FROM tm_venta WHERE (date(fecha_venta) BETWEEN ? AND ?);");
+                // $comprobantes = $this->db->prepare("SELECT COUNT(*) total_comprobantes FROM tm_venta WHERE id_tipo_doc != 3 AND (date(fecha_venta) BETWEEN ? AND ?);");
+                $comprobantes->execute(array($init,$end)); 
+                return [
+                    'limits' => [
+                        'total_invoices' => $plan->{'limit_documents'},
+                    ],
+                    'current' => [
+                        'total_invoices'    => $comprobantes->fetch(PDO::FETCH_COLUMN),
+                    ],
+                    'locked_invoices' => $plan->{'locked_documents'},
+                ];
+                
+            }
+
+        }catch(Exception $e)
+        {
+            die($e->getMessage());
+        }
+    }
+    public function contadorplan()
+    {
+        try
+        {    
+
+            $empresa    = $this->db->selectOne('SELECT nombre_comercial,ruc,logo FROM tm_empresa');
+            $usuarios   = $this->db->prepare('SELECT COUNT(*) total FROM tm_usuario WHERE id_rol != 1');
+            $usuarios->execute();
+            $plan       = $this->db->prepare('SELECT plan FROM tm_configuracion');
+            $plan->execute();
+
+            $c{'empresa'}   = $empresa;
+            $plan           = json_decode($plan->fetch(PDO::FETCH_COLUMN));
+  
+            $date = date('Y-m-d', strtotime($plan->{'created_at'}));
+            $day_start_billing  = date('d', strtotime($plan->{'created_at'}));
+            $day_now            = (int)date('j');
+            $end   = date('Y-m-d');
+
+            $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+            $end_date = date('Y-m-t', strtotime($date));
+            if($day_now <= $day_start_billing){
+                if ($date == $end_date)
+                {
+                    
+                    $init   = date('Y-m-t',strtotime("- 1 month"));	
+                    $frist_date = date('Y-m-01', strtotime($init));
+                    $last_date_nm = date('Y-m-t',strtotime($frist_date."+ 1 month")); 
+                    
+                }else {
+
+                    $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+                    $init	= date('Y-m-d',strtotime($init."- 1 month"));
+                    $last_date_nm = date('Y-m-d',strtotime($init."+ 1 month")); 
+                    
+                }
+            }else{
+                if ($date == $end_date)
+                {	
+
+                    $init   = date('Y-m-t');	
+                    $frist_date = date('Y-m-01', strtotime($init));
+                    $last_date_nm = date('Y-m-t',strtotime($frist_date."+ 1 month")); 
+                    
+                }else {
+
+                    $init   = date('Y').'-'.date('m').'-'.$day_start_billing;
+                    $last_date_nm = date('Y-m-d',strtotime($init."+ 1 month")); 
+                    
+                }
+            }
+
+            $comprobantes = $this->db->prepare("SELECT COUNT(*) total_comprobantes FROM tm_venta WHERE (date(fecha_venta) BETWEEN ? AND ?);");
+            // $comprobantes = $this->db->prepare("SELECT COUNT(*) total_comprobantes FROM tm_venta WHERE id_tipo_doc != 3 AND (date(fecha_venta) BETWEEN ? AND ?);");
+            $comprobantes->execute(array($init,$end)); 
+                
+            $c{'intervals'} =[
+                $init,
+                $last_date_nm,
+            ];
+
+            $c{'current'} = [
+                'total_invoices'    => $comprobantes->fetch(PDO::FETCH_COLUMN),
+                'total_users'       => $usuarios->fetch(PDO::FETCH_COLUMN),
+            ];
+
+            $c{'limits'} = [
+                'total_invoices' => $plan->{'limit_documents'},
+                'total_users' => $plan->{'limit_users'},
+            ];
+
+            $data = array("data" => $c);
+            $json = json_encode($data);
+            echo $json;
+        }
+        catch(Exception $e)
+        {
+            die($e->getMessage());
+        }
+    }
+    public function datoplataforma_data()
+    {
+        try
+        {    
+            $plan       = $this->db->prepare('SELECT plan FROM tm_configuracion');
+            $plan->execute();
+            $plan       = json_decode($plan->fetch(PDO::FETCH_COLUMN));
+            return $plan;
+
+        }
+        catch(Exception $e)
+        {
+            die($e->getMessage());
+        }
+    }
+    public function datoplataforma_crud($data)
+    {
+        try
+        {   
+            
+            $sql = "UPDATE tm_configuracion SET plan = ? WHERE id_cfg = 1";
+            $df = array( 'created_at' => $data["created_at"],'limit_users'=> $data["limit_users"],'locked_users' =>$data["locked_users"],'limit_documents' => $data["limit_documents"],'locked_documents' => $data["locked_documents"]);
+            $df = (json_encode($df));
+            $arrayParam =  array($df);
+            $st = $this->db->prepare($sql);
+            $st->execute($arrayParam);
+
+            return ($st->rowCount())? '1' : '0';
+            
+        }
+        catch(Exception $e)
+        {
+            die($e->getMessage());
+        }
+    }
+
+
 
 }
