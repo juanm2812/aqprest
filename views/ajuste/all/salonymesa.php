@@ -141,6 +141,16 @@
                     </div>
                     <div class="col-sm-12">
                         <div class="form-group m-b-40">
+                            <select class="selectpicker form-control" name="forma" id="forma" data-style="form-control btn-default" data-live-search-style="begins" data-live-search="true">
+                                <option value="1" active>Cuadrado</option>
+                                <option value="2">Redondo</option>  
+                            </select>
+                            <span class="bar"></span>
+                            <label for="forma">Forma</label>
+                        </div>
+                    </div>                    
+                    <div class="col-sm-12">
+                        <div class="form-group m-b-40">
                             <select class="selectpicker form-control" name="estado_1" id="estado_1" data-style="form-control btn-default" data-live-search-style="begins" data-live-search="true">
                                 <option value="a" active>ACTIVO</option>
                                 <option value="m">INACTIVO</option>  

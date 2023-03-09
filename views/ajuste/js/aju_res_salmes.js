@@ -92,7 +92,7 @@ var listarMesas = function(id_salon,descripcion){
                 } 
             }},
             {"data":null,"render": function ( data, type, row ) {
-                return '<div class="text-right"><a href="javascript:void(0)" class="text-info edit" onclick="editarMesa('+data.id_mesa+',\''+data.nro_mesa+'\',\''+data.estado+'\');"><i data-feather="edit" class="feather-sm fill-white"></i></a>'
+                return '<div class="text-right"><a href="javascript:void(0)" class="text-info edit" onclick="editarMesa('+data.id_mesa+',\''+data.nro_mesa+'\',\''+data.forma+'\',\''+data.estado+'\');"><i data-feather="edit" class="feather-sm fill-white"></i></a>'
                     +'&nbsp;<a href="javascript:void(0)" class="text-danger delete ms-2" onclick="eliminarMesa('+data.id_mesa+',\''+data.nro_mesa+'\');"><i data-feather="trash-2" class="feather-sm fill-white"></i></a></div>';
             }}
         ]
@@ -180,10 +180,11 @@ var eliminarSalon = function(id_salon,descripcion){
 }
 
 /* Editar datos de la mesa*/
-var editarMesa = function(id_mesa,nro_mesa,estado){
+var editarMesa = function(id_mesa,nro_mesa,forma,estado){
     $(".f").addClass("focused");
     $('#id_mesa').val(id_mesa);
     $('#nro_mesa').val(nro_mesa);    
+    $('#forma').selectpicker('val', forma); 
     $('#estado_1').selectpicker('val', estado); 
     $("#modal02").modal('show');
 }
@@ -377,6 +378,7 @@ $(function() {
           mesas.id_mesa = $('#id_mesa').val();
           mesas.id_salon = $('#id_salon_1').val();
           mesas.nro_mesa = $('#nro_mesa').val();
+          mesas.forma = $('#forma').val();
           mesas.estado = $('#estado_1').val();
 
           $.ajax({
